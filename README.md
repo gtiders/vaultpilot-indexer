@@ -38,21 +38,27 @@ tools can read a compact index file first, then open only relevant notes.
 npm install
 ```
 
-2. Build plugin:
+2. Build plugin release package:
 
 ```bash
 npm run build
 ```
 
-3. Copy `main.js` and `manifest.json` to your vault plugin directory:
+3. Build output is generated in:
 
 ```text
-.obsidian/plugins/obsidian-jsonl-index-plugin/
+dist/obsidian-jsonl-index-plugin/
 ```
 
-4. Enable plugin in Obsidian Community plugins.
+4. Copy the whole `obsidian-jsonl-index-plugin` folder into your vault plugin directory:
 
-5. Open plugin settings and configure:
+```text
+.obsidian/plugins/
+```
+
+5. Enable plugin in Obsidian Community plugins.
+
+6. Open plugin settings and configure:
 - API Base URL
 - API Token
 - Model selection (refresh catalog or manual override)

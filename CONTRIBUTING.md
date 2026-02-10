@@ -23,6 +23,12 @@ npm test
 npm run build
 ```
 
+Build artifacts are created at:
+
+```text
+dist/obsidian-jsonl-index-plugin/
+```
+
 ## Coding rules
 
 - Keep changes small and focused.

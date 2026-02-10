@@ -14,12 +14,13 @@
   "license": "MIT",
   "author": "Atlas",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --format=cjs --platform=node --target=node18 --outfile=main.js --external:obsidian",
+    "build": "node scripts/build-plugin.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "esbuild": "^0.24.2",
     "obsidian": "latest",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

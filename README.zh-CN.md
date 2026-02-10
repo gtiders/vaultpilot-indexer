@@ -36,21 +36,27 @@ VaultPilot Indexer 是一个 Obsidian 插件，用于增量构建 JSONL 索引�
 npm install
 ```
 
-2. 编译插件：
+2. 构建发布包：
 
 ```bash
 npm run build
 ```
 
-3. 将 `main.js` 和 `manifest.json` 复制到：
+3. 构建输出目录：
 
 ```text
-.obsidian/plugins/obsidian-jsonl-index-plugin/
+dist/obsidian-jsonl-index-plugin/
 ```
 
-4. 在 Obsidian 社区插件中启用。
+4. 将整个 `obsidian-jsonl-index-plugin` 文件夹复制到：
 
-5. 打开插件设置并配置：
+```text
+.obsidian/plugins/
+```
+
+5. 在 Obsidian 社区插件中启用。
+
+6. 打开插件设置并配置：
 - API Base URL
 - API Token
 - 模型选择（刷新模型目录或手动覆盖）
