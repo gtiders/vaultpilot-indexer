@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IndexRecord",
+  "description": "Schema for content_index.jsonl records",
+  "type": "object",
+  "required": ["schema_version", "note_id", "path", "title", "summary_status", "hash", "mtime"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for migration compatibility",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "note_id": {
+      "type": "string",
+      "description": "Unique identifier for the note (vault-relative path)"
+    },
+    "path": {
+      "type": "string",
+      "description": "Vault-relative file path"
+    },
+    "title": {
+      "type": "string",
+      "description": "Note title from frontmatter or filename"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Tags extracted from note",
+      "items": {
+        "type": "string"
+      }
+    },
+    "outlinks": {
+      "type": "array",
+      "description": "Outbound wikilinks from note",
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "AI-generated summary (80-180 chars, 1 paragraph)",
+      "maxLength": 200
+    },
+    "summary_status": {
+      "type": "string",
+      "description": "Summary generation status",
+      "enum": ["ok", "failed", "pending", "skipped"]
+    },
+    "hash": {
+      "type": "string",
+      "description": "SHA-256 hash of normalized content for change detection",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mtime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last modification time in ISO 8601 format"
+    },
+    "provider_meta": {
+      "type": "object",
+      "description": "Metadata about the summary provider",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider identifier (e.g., 'openai-compatible')"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model name used for generation"
+        },
+        "latency_ms": {
+          "type": "integer",
+          "description": "Request latency in milliseconds"
+        },
+        "tokens_input": {
+          "type": "integer"
+        },
+        "tokens_output": {
+          "type": "integer"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

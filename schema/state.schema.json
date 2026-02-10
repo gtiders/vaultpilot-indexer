@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IndexState",
+  "description": "Schema for plugin state file (index_state.json)",
+  "type": "object",
+  "required": ["schema_version", "last_success_at"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for migration compatibility",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "last_processed_hash": {
+      "type": "object",
+      "description": "Map of note_id -> hash for incremental updates",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "retry_queue": {
+      "type": "array",
+      "description": "Queue of failed summary requests to retry",
+      "items": {
+        "type": "object",
+        "required": ["note_id", "path", "failed_at", "error_code", "retry_count"],
+        "properties": {
+          "note_id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "failed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error_code": {
+            "type": "string",
+            "enum": ["AUTH_FAILED", "RATE_LIMIT", "TIMEOUT", "UPSTREAM_INVALID_RESPONSE", "NETWORK_ERROR"]
+          },
+          "error_message": {
+            "type": "string"
+          },
+          "retry_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last_retry_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "last_success_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last successful index update"
+    },
+    "stats": {
+      "type": "object",
+      "description": "Indexing statistics",
+      "properties": {
+        "total_notes": {
+          "type": "integer"
+        },
+        "summarized_notes": {
+          "type": "integer"
+        },
+        "failed_notes": {
+          "type": "integer"
+        },
+        "pending_notes": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

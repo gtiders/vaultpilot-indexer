@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SkillOutput",
+  "description": "Output schema for collaborator guidance skill",
+  "type": "object",
+  "required": ["folder", "tags", "references", "rationale"],
+  "properties": {
+    "folder": {
+      "type": "string",
+      "description": "Suggested folder path relative to vault root",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "description": "Recommended tags to apply to the note",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+$"
+      },
+      "minItems": 1,
+      "maxItems": 10
+    },
+    "references": {
+      "type": "array",
+      "description": "Suggested references to existing notes",
+      "items": {
+        "type": "object",
+        "required": ["note_id", "reason"],
+        "properties": {
+          "note_id": {
+            "type": "string",
+            "description": "ID/path of the referenced note from JSONL"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this note is relevant",
+            "minLength": 10,
+            "maxLength": 200
+          },
+          "link_text": {
+            "type": "string",
+            "description": "Optional custom link text for the reference",
+            "maxLength": 100
+          }
+        }
+      },
+      "minItems": 0,
+      "maxItems": 5
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Explanation of why these recommendations make sense",
+      "minLength": 20,
+      "maxLength": 500
+    }
+  },
+  "additionalProperties": false
+}

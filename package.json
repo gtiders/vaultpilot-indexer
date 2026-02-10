@@ -1,0 +1,27 @@
+{
+  "name": "vaultpilot-indexer",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Obsidian plugin for incremental JSONL indexing and AI-assisted writing organization.",
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "indexing",
+    "jsonl",
+    "ai"
+  ],
+  "license": "MIT",
+  "author": "Atlas",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --format=cjs --platform=node --target=node18 --outfile=main.js --external:obsidian",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "obsidian": "latest",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

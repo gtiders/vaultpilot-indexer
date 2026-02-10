@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-jsonl-index-plugin",
+  "name": "VaultPilot Indexer",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Build and maintain a JSONL knowledge index with AI summaries for writing collaboration.",
+  "author": "Atlas",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
