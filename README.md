@@ -21,10 +21,9 @@ tools can read a compact index file first, then open only relevant notes.
 - **External editor detection** with debounced indexing
 - **Companion skill** for folder/tag/reference recommendations with tag deduplication
 
-## Project name and skill name
+## Project name
 
 - Project name: **VaultPilot Indexer**
-- Companion skill name: **Vault Writing Navigator**
 
 ## Output files
 

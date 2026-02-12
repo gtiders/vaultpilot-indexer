@@ -18,10 +18,9 @@ VaultPilot Indexer 是一个 Obsidian 插件，用于增量构建 JSONL 索引�
 - 构建进度状态显示 + 可选通知
 - 配套 skill 规范（目录/标签/引用建议）
 
-## 项目与 skill 命名
+## 项目命名
 
 - 项目名：**VaultPilot Indexer**
-- 协作 skill 名：**Vault Writing Navigator**
 
 ## 输出文件位置
 
@@ -36,27 +35,28 @@ VaultPilot Indexer 是一个 Obsidian 插件，用于增量构建 JSONL 索引�
 npm install
 ```
 
-2. 构建发布包：
+1. 构建发布包：
 
 ```bash
 npm run build
 ```
 
-3. 构建输出目录：
+1. 构建输出目录：
 
 ```text
 dist/vaultpilot-indexer/
 ```
 
-4. 将整个 `vaultpilot-indexer` 文件夹复制到：
+1. 将整个 `vaultpilot-indexer` 文件夹复制到：
 
 ```text
 .obsidian/plugins/
 ```
 
-5. 在 Obsidian 社区插件中启用。
+1. 在 Obsidian 社区插件中启用。
 
-6. 打开插件设置并配置：
+2. 打开插件设置并配置：
+
 - API Base URL
 - API Token
 - 模型选择（刷新模型目录或手动覆盖）
