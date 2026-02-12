@@ -850,13 +850,7 @@ export default class VaultPilotIndexerPlugin extends Plugin {
       return;
     }
 
-    const tagsData: Record<string, { count: number; files: string[] }> = {};
-    for (const [tag, files] of tagMap.entries()) {
-      tagsData[tag] = {
-        count: files.length,
-        files: files.slice(0, 10)
-      };
-    }
+    const tagsList = [...tagMap.keys()].sort((a, b) => a.localeCompare(b));
 
     const tagsJsonPath = ".obsidian/plugins/vaultpilot-indexer/tags_index.json";
 
@@ -864,9 +858,9 @@ export default class VaultPilotIndexerPlugin extends Plugin {
       await this.ensurePluginDir();
       await this.app.vault.adapter.write(
         tagsJsonPath,
-        JSON.stringify(tagsData, null, 2)
+        JSON.stringify(tagsList, null, 2)
       );
-      this.notify(`Tags index exported to ${tagsJsonPath} (${tagMap.size} tags)`);
+      this.notify(`Tags index exported to ${tagsJsonPath} (${tagsList.length} tags)`);
     } catch (error) {
       this.notify(`Failed to export tags JSON: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
