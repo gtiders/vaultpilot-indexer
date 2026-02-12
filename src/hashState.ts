@@ -50,6 +50,30 @@ export class StateStore {
     };
   }
 
+  loadSync(): IndexState | null {
+    try {
+      if (typeof process !== "undefined" && process.versions?.node) {
+        const { readFileSync, existsSync } = require("node:fs");
+        const path = require("node:path");
+        const fullPath = path.join(process.cwd(), STATE_FILE_PATH);
+        if (!existsSync(fullPath)) {
+          return null;
+        }
+        const raw = readFileSync(fullPath, "utf8");
+        const parsed = JSON.parse(raw) as IndexState;
+        return {
+          ...createEmptyState(),
+          ...parsed,
+          last_processed_hash: parsed.last_processed_hash ?? {},
+          retry_queue: parsed.retry_queue ?? []
+        };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
   async save(state: IndexState): Promise<void> {
     await this.ensurePluginDir();
     await this.adapter.write(STATE_FILE_PATH, JSON.stringify(state, null, 2));

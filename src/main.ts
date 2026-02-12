@@ -209,6 +209,21 @@ export default class VaultPilotIndexerPlugin extends Plugin {
         await this.clearIndexData();
       }
     });
+
+    this.addCommand({
+      id: "resume-rebuild",
+      name: "Resume Interrupted Rebuild",
+      checkCallback: (checking: boolean) => {
+        const hasCheckpoint = this.hasRebuildCheckpoint();
+        if (hasCheckpoint) {
+          if (!checking) {
+            void this.resumeRebuild();
+          }
+          return true;
+        }
+        return false;
+      }
+    });
   }
 
   private enqueueFileEvent(type: IndexEventType, file: TAbstractFile): void {
@@ -339,25 +354,108 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     await this.stateStore.save(state);
   }
 
-  async rebuildIndex(): Promise<void> {
-    const files = this.app.vault.getMarkdownFiles().filter((file) => !this.shouldExcludePath(file.path));
-    const total = files.length;
-    if (total === 0) {
-      this.notify("No eligible markdown files for rebuild");
-      return;
+  async rebuildIndex(resume = false): Promise<void> {
+    const state = await this.stateStore.load();
+    let files: TFile[];
+    let startIndex = 0;
+
+    if (resume && state.rebuild_checkpoint?.in_progress) {
+      const checkpoint = state.rebuild_checkpoint;
+      const allFiles = this.app.vault.getMarkdownFiles().filter((file) => !this.shouldExcludePath(file.path));
+      const processedSet = new Set(checkpoint.processed_files);
+
+      files = allFiles.filter((file) => !processedSet.has(file.path));
+      startIndex = checkpoint.processed_count;
+
+      this.notify(`Resuming rebuild: ${checkpoint.processed_count}/${checkpoint.total_files} files already processed`);
+    } else {
+      files = this.app.vault.getMarkdownFiles().filter((file) => !this.shouldExcludePath(file.path));
+
+      if (files.length === 0) {
+        this.notify("No eligible markdown files for rebuild");
+        return;
+      }
+
+      this.notify(`Starting full rebuild of ${files.length} files...`);
+
+      state.rebuild_checkpoint = {
+        in_progress: true,
+        total_files: files.length,
+        processed_count: 0,
+        processed_files: [],
+        started_at: new Date().toISOString(),
+        last_updated_at: new Date().toISOString()
+      };
+      await this.stateStore.save(state);
     }
 
-    this.notify(`Starting full rebuild of ${total} files...`);
-    this.updateBuildProgress(0, total);
+    const total = state.rebuild_checkpoint?.total_files || files.length;
+    this.updateBuildProgress(startIndex, total);
 
-    for (let i = 0; i < total; i += 1) {
+    const CHECKPOINT_INTERVAL = 10;
+
+    for (let i = 0; i < files.length; i += 1) {
       const file = files[i];
       await this.forceProcessFile(file);
-      this.updateBuildProgress(i + 1, total);
+
+      const currentCount = startIndex + i + 1;
+      this.updateBuildProgress(currentCount, total);
+
+      if ((i + 1) % CHECKPOINT_INTERVAL === 0 || i === files.length - 1) {
+        const currentState = await this.stateStore.load();
+        if (currentState.rebuild_checkpoint) {
+          currentState.rebuild_checkpoint.processed_count = currentCount;
+          currentState.rebuild_checkpoint.processed_files.push(file.path);
+          currentState.rebuild_checkpoint.last_updated_at = new Date().toISOString();
+          await this.stateStore.save(currentState);
+        }
+      }
+    }
+
+    const finalState = await this.stateStore.load();
+    if (finalState.rebuild_checkpoint) {
+      finalState.rebuild_checkpoint.in_progress = false;
+      await this.stateStore.save(finalState);
     }
 
     this.statusBarEl.setText("JSONL Index: idle");
     this.notify(`Rebuild complete: ${total} files processed`);
+  }
+
+  async resumeRebuild(): Promise<void> {
+    const state = await this.stateStore.load();
+    if (!state.rebuild_checkpoint?.in_progress) {
+      this.notify("No interrupted rebuild found");
+      return;
+    }
+
+    await this.rebuildIndex(true);
+  }
+
+  async clearRebuildCheckpoint(): Promise<void> {
+    const state = await this.stateStore.load();
+    if (state.rebuild_checkpoint) {
+      state.rebuild_checkpoint.in_progress = false;
+      await this.stateStore.save(state);
+      this.notify("Rebuild checkpoint cleared");
+    }
+  }
+
+  hasRebuildCheckpoint(): boolean {
+    const state = this.stateStore.loadSync?.() || { rebuild_checkpoint: undefined };
+    return state.rebuild_checkpoint?.in_progress || false;
+  }
+
+  getRebuildCheckpointStatus(): { in_progress: boolean; progress: string } | null {
+    const state = this.stateStore.loadSync?.();
+    if (!state?.rebuild_checkpoint) {
+      return null;
+    }
+    const cp = state.rebuild_checkpoint;
+    return {
+      in_progress: cp.in_progress,
+      progress: `${cp.processed_count}/${cp.total_files}`
+    };
   }
 
   private async forceProcessFile(file: TFile): Promise<void> {

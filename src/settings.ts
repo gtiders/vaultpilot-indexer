@@ -172,9 +172,39 @@ export class JsonlIndexSettingTab extends PluginSettingTab {
           });
       });
 
+    const checkpointStatus = this.plugin.getRebuildCheckpointStatus?.();
+
+    if (checkpointStatus?.in_progress) {
+      new Setting(containerEl)
+        .setName("Resume interrupted rebuild")
+        .setDesc(`Previous rebuild was interrupted at ${checkpointStatus.progress} files`)
+        .addButton((button) => {
+          button.setButtonText("Resume Build").setCta().onClick(async () => {
+            button.setDisabled(true);
+            try {
+              await this.plugin.resumeRebuild();
+            } finally {
+              button.setDisabled(false);
+              this.display();
+            }
+          });
+        })
+        .addButton((button) => {
+          button.setButtonText("Clear Checkpoint").onClick(async () => {
+            button.setDisabled(true);
+            try {
+              await this.plugin.clearRebuildCheckpoint();
+              this.display();
+            } finally {
+              button.setDisabled(false);
+            }
+          });
+        });
+    }
+
     new Setting(containerEl)
       .setName("Start index rebuild")
-      .setDesc("Queue a full vault rebuild with current rules")
+      .setDesc(checkpointStatus?.in_progress ? "Start a fresh rebuild (will overwrite checkpoint)" : "Queue a full vault rebuild with current rules")
       .addButton((button) => {
         button.setButtonText("Start Build").onClick(async () => {
           button.setDisabled(true);
@@ -182,6 +212,7 @@ export class JsonlIndexSettingTab extends PluginSettingTab {
             await this.plugin.rebuildIndex();
           } finally {
             button.setDisabled(false);
+            this.display();
           }
         });
       });
