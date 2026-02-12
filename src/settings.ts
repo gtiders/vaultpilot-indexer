@@ -242,36 +242,13 @@ export class JsonlIndexSettingTab extends PluginSettingTab {
     containerEl.createEl("h3", { text: "Tags Export" });
 
     new Setting(containerEl)
-      .setName("Tags export file path")
-      .setDesc("Relative path for the exported tags index file (e.g., Tags.md)")
-      .addText((text) => {
-        text
-          .setPlaceholder("Tags.md")
-          .setValue(this.plugin.settings.tags_export_path)
-          .onChange(async (value) => {
-            this.plugin.settings.tags_export_path = value.trim() || "Tags.md";
-            await this.plugin.saveSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName("Auto-export tags")
-      .setDesc("Automatically export tags when index is updated")
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.settings.auto_export_tags).onChange(async (value) => {
-          this.plugin.settings.auto_export_tags = value;
-          await this.plugin.saveSettings();
-        });
-      });
-
-    new Setting(containerEl)
-      .setName("Export tags now")
-      .setDesc("Manually trigger tags export to file")
+      .setName("Export tags to JSON")
+      .setDesc("Export tags index for skill integration (.obsidian/plugins/vaultpilot-indexer/tags_index.json)")
       .addButton((button) => {
         button.setButtonText("Export Tags").onClick(async () => {
           button.setDisabled(true);
           try {
-            await this.plugin.exportTagsToFile();
+            await this.plugin.exportTagsToJson();
           } finally {
             button.setDisabled(false);
           }
