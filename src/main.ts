@@ -26,7 +26,9 @@ const DEFAULT_SETTINGS: PluginConfig = {
   enable_notifications: true,
   discovered_models: [],
   model_catalog_endpoint: "",
-  model_catalog_fetched_at: ""
+  model_catalog_fetched_at: "",
+  tags_export_path: "Tags.md",
+  auto_export_tags: false
 };
 
 export default class VaultPilotIndexerPlugin extends Plugin {
@@ -189,6 +191,22 @@ export default class VaultPilotIndexerPlugin extends Plugin {
       name: "Show Index File Location",
       callback: () => {
         this.notify(`Index: ${INDEX_FILE_PATH} | State: ${STATE_FILE_PATH}`);
+      }
+    });
+
+    this.addCommand({
+      id: "export-tags",
+      name: "Export Tags to File",
+      callback: async () => {
+        await this.exportTagsToFile();
+      }
+    });
+
+    this.addCommand({
+      id: "clear-index-data",
+      name: "Clear Index Data",
+      callback: async () => {
+        await this.clearIndexData();
       }
     });
   }
@@ -660,5 +678,100 @@ export default class VaultPilotIndexerPlugin extends Plugin {
       await this.forceProcessFile(file);
     }
     this.notify(`Reindex complete: ${files.length} files processed`);
+  }
+
+  async exportTagsToFile(): Promise<void> {
+    const state = await this.stateStore.load();
+    const tagMap = new Map<string, string[]>();
+
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (this.shouldExcludePath(file.path)) {
+        continue;
+      }
+
+      const content = await this.app.vault.cachedRead(file);
+      const tags = this.extractTags(content);
+
+      for (const tag of tags) {
+        if (!tagMap.has(tag)) {
+          tagMap.set(tag, []);
+        }
+        tagMap.get(tag)!.push(file.path);
+      }
+    }
+
+    if (tagMap.size === 0) {
+      this.notify("No tags found to export");
+      return;
+    }
+
+    const sortedTags = [...tagMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+    let content = "# Tags Index\n\n";
+    content += `Generated: ${new Date().toLocaleString()}\n\n`;
+    content += `Total tags: ${tagMap.size}\n\n`;
+    content += "---\n\n";
+
+    for (const [tag, files] of sortedTags) {
+      content += `## #${tag}\n\n`;
+      content += `**Count**: ${files.length} file(s)\n\n`;
+      for (const filePath of files) {
+        const fileName = filePath.split("/").pop() || filePath;
+        content += `- [[${filePath}|${fileName}]]\n`;
+      }
+      content += "\n";
+    }
+
+    const exportPath = this.settings.tags_export_path || "Tags.md";
+    const existingFile = this.app.vault.getAbstractFileByPath(exportPath);
+
+    try {
+      if (existingFile instanceof TFile) {
+        await this.app.vault.modify(existingFile, content);
+      } else {
+        await this.app.vault.create(exportPath, content);
+      }
+      this.notify(`Tags exported to ${exportPath} (${tagMap.size} tags)`);
+    } catch (error) {
+      this.notify(`Failed to export tags: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  async clearIndexData(): Promise<void> {
+    try {
+      await this.queue.flushNow();
+      this.queue.clear();
+
+      const indexFile = this.app.vault.getAbstractFileByPath(INDEX_FILE_PATH);
+      if (indexFile) {
+        await this.app.vault.delete(indexFile);
+      }
+
+      const stateFile = this.app.vault.getAbstractFileByPath(STATE_FILE_PATH);
+      if (stateFile) {
+        await this.app.vault.delete(stateFile);
+      }
+
+      this.notify("Index data cleared successfully");
+    } catch (error) {
+      this.notify(`Failed to clear index: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  async clearAllData(): Promise<void> {
+    try {
+      await this.clearIndexData();
+
+      if (this.settings.auto_export_tags && this.settings.tags_export_path) {
+        const tagsFile = this.app.vault.getAbstractFileByPath(this.settings.tags_export_path);
+        if (tagsFile) {
+          await this.app.vault.delete(tagsFile);
+        }
+      }
+
+      this.notify("All plugin data cleared");
+    } catch (error) {
+      this.notify(`Failed to clear data: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 }

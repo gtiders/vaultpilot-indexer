@@ -207,5 +207,74 @@ export class JsonlIndexSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("State file location")
       .setDesc(this.plugin.getStateFilePath());
+
+    containerEl.createEl("h3", { text: "Tags Export" });
+
+    new Setting(containerEl)
+      .setName("Tags export file path")
+      .setDesc("Relative path for the exported tags index file (e.g., Tags.md)")
+      .addText((text) => {
+        text
+          .setPlaceholder("Tags.md")
+          .setValue(this.plugin.settings.tags_export_path)
+          .onChange(async (value) => {
+            this.plugin.settings.tags_export_path = value.trim() || "Tags.md";
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName("Auto-export tags")
+      .setDesc("Automatically export tags when index is updated")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.settings.auto_export_tags).onChange(async (value) => {
+          this.plugin.settings.auto_export_tags = value;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Export tags now")
+      .setDesc("Manually trigger tags export to file")
+      .addButton((button) => {
+        button.setButtonText("Export Tags").onClick(async () => {
+          button.setDisabled(true);
+          try {
+            await this.plugin.exportTagsToFile();
+          } finally {
+            button.setDisabled(false);
+          }
+        });
+      });
+
+    containerEl.createEl("h3", { text: "Data Management" });
+
+    new Setting(containerEl)
+      .setName("Clear index data")
+      .setDesc("Delete index and state files (keeps tags export file)")
+      .addButton((button) => {
+        button.setButtonText("Clear Index").setWarning().onClick(async () => {
+          button.setDisabled(true);
+          try {
+            await this.plugin.clearIndexData();
+          } finally {
+            button.setDisabled(false);
+          }
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Clear all data")
+      .setDesc("Delete all plugin data including tags export file")
+      .addButton((button) => {
+        button.setButtonText("Clear All").setWarning().onClick(async () => {
+          button.setDisabled(true);
+          try {
+            await this.plugin.clearAllData();
+          } finally {
+            button.setDisabled(false);
+          }
+        });
+      });
   }
 }

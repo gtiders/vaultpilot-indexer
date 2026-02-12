@@ -163,6 +163,12 @@ export interface PluginConfig {
 
   /** Last successful discovery timestamp */
   model_catalog_fetched_at: string;
+
+  /** Path to export all tags (relative to vault root) */
+  tags_export_path: string;
+
+  /** Whether to auto-export tags when index is updated */
+  auto_export_tags: boolean;
 }
 
 /**
