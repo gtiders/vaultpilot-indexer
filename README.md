@@ -27,8 +27,8 @@ tools can read a compact index file first, then open only relevant notes.
 
 ## Output files
 
-- Index: `.obsidian/plugins/obsidian-jsonl-index-plugin/content_index.jsonl`
-- State: `.obsidian/plugins/obsidian-jsonl-index-plugin/index_state.json`
+- Index: `.obsidian/plugins/vaultpilot-indexer/content_index.jsonl`
+- State: `.obsidian/plugins/vaultpilot-indexer/index_state.json`
 
 ## Quick start
 
@@ -47,10 +47,10 @@ npm run build
 3. Build output is generated in:
 
 ```text
-dist/obsidian-jsonl-index-plugin/
+dist/vaultpilot-indexer/
 ```
 
-4. Copy the whole `obsidian-jsonl-index-plugin` folder into your vault plugin directory:
+4. Copy the whole `vaultpilot-indexer` folder into your vault plugin directory:
 
 ```text
 .obsidian/plugins/

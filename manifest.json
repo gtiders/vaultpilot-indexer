@@ -1,5 +1,5 @@
 {
-  "id": "obsidian-jsonl-index-plugin",
+  "id": "vaultpilot-indexer",
   "name": "VaultPilot Indexer",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",

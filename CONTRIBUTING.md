@@ -26,7 +26,7 @@ npm run build
 Build artifacts are created at:
 
 ```text
-dist/obsidian-jsonl-index-plugin/
+dist/vaultpilot-indexer/
 ```
 
 ## Coding rules

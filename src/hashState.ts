@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { App, DataAdapter } from "obsidian";
 import type { IndexState } from "../types/index";
 
-export const STATE_FILE_PATH = ".obsidian/plugins/obsidian-jsonl-index-plugin/index_state.json";
+export const STATE_FILE_PATH = ".obsidian/plugins/vaultpilot-indexer/index_state.json";
 const STATE_VERSION = "1.0.0";
 
 export function normalizeMarkdown(content: string): string {
@@ -56,7 +56,7 @@ export class StateStore {
   }
 
   private async ensurePluginDir(): Promise<void> {
-    const pluginDir = ".obsidian/plugins/obsidian-jsonl-index-plugin";
+    const pluginDir = ".obsidian/plugins/vaultpilot-indexer";
     const exists = await this.adapter.exists(pluginDir);
     if (!exists) {
       await this.adapter.mkdir(pluginDir);

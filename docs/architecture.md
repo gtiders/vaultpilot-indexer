@@ -40,8 +40,8 @@ For each markdown file event, the pipeline:
 
 ## Output paths
 
-- Index file: `.obsidian/plugins/obsidian-jsonl-index-plugin/content_index.jsonl`
-- State file: `.obsidian/plugins/obsidian-jsonl-index-plugin/index_state.json`
+- Index file: `.obsidian/plugins/vaultpilot-indexer/content_index.jsonl`
+- State file: `.obsidian/plugins/vaultpilot-indexer/index_state.json`
 
 ## Model selection strategy
 

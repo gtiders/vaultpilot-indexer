@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS: PluginConfig = {
   model_catalog_fetched_at: ""
 };
 
-export default class ObsidianJsonlIndexPlugin extends Plugin {
+export default class VaultPilotIndexerPlugin extends Plugin {
   private queue!: IndexEventQueue;
   private stateStore!: StateStore;
   private writer!: JsonlIndexWriter;
@@ -48,7 +48,7 @@ export default class ObsidianJsonlIndexPlugin extends Plugin {
     this.registerCommands();
     this.addSettingTab(new JsonlIndexSettingTab(this));
 
-    new Notice("Obsidian JSONL Index Plugin loaded");
+    new Notice("VaultPilot Indexer loaded");
   }
 
   onunload(): void {
@@ -494,6 +494,6 @@ export default class ObsidianJsonlIndexPlugin extends Plugin {
     const barSize = 16;
     const filled = Math.round(ratio * barSize);
     const bar = `${"#".repeat(filled)}${"-".repeat(barSize - filled)}`;
-    this.statusBarEl.setText(`JSONL Build [${bar}] ${done}/${total} (${percent}%)`);
+    this.statusBarEl.setText(`VaultPilot Build [${bar}] ${done}/${total} (${percent}%)`);
   }
 }

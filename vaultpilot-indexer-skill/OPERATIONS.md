@@ -15,8 +15,8 @@
 
 ## Data Locations
 
-- `content_index.jsonl`: `.obsidian/plugins/obsidian-jsonl-index-plugin/content_index.jsonl`
-- `index_state.json`: `.obsidian/plugins/obsidian-jsonl-index-plugin/index_state.json`
+- `content_index.jsonl`: `.obsidian/plugins/vaultpilot-indexer/content_index.jsonl`
+- `index_state.json`: `.obsidian/plugins/vaultpilot-indexer/index_state.json`
 
 ## Safety
 

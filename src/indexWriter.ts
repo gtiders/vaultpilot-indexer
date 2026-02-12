@@ -1,7 +1,7 @@
 import type { App, DataAdapter } from "obsidian";
 import type { IndexRecord } from "../types/index";
 
-export const INDEX_FILE_PATH = ".obsidian/plugins/obsidian-jsonl-index-plugin/content_index.jsonl";
+export const INDEX_FILE_PATH = ".obsidian/plugins/vaultpilot-indexer/content_index.jsonl";
 
 export class JsonlIndexWriter {
   private readonly adapter: DataAdapter;
@@ -37,7 +37,7 @@ export class JsonlIndexWriter {
   }
 
   private async ensurePluginDir(): Promise<void> {
-    const pluginDir = ".obsidian/plugins/obsidian-jsonl-index-plugin";
+    const pluginDir = ".obsidian/plugins/vaultpilot-indexer";
     const exists = await this.adapter.exists(pluginDir);
     if (!exists) {
       await this.adapter.mkdir(pluginDir);
