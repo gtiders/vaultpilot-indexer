@@ -211,7 +211,7 @@ export default class VaultPilotIndexerPlugin extends Plugin {
 
     this.addCommand({
       id: "export-tags-json",
-      name: "Export Tags to JSON (for Skill)",
+      name: "Export Tags to JSON",
       callback: async () => {
         await this.exportTagsToJson();
       }
