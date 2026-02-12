@@ -1,4 +1,4 @@
-import { Notice, Plugin, TAbstractFile, TFile } from "obsidian";
+import { Menu, Notice, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
 import type { IndexRecord, RetryQueueItem, SummaryStatus } from "../types/index";
 import { IndexEventQueue } from "./eventQueue";
 import type { IndexEvent, IndexEventType } from "./events";
@@ -107,12 +107,33 @@ export default class VaultPilotIndexerPlugin extends Plugin {
         }
       })
     );
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu: Menu, file: TAbstractFile) => {
+        this.addContextMenuItems(menu, file);
+      })
+    );
   }
 
   private registerCommands(): void {
     this.addCommand({
+      id: "reindex-current-file",
+      name: "Reindex Current File",
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (file && file.extension === "md" && !this.shouldExcludePath(file.path)) {
+          if (!checking) {
+            void this.reindexFile(file);
+          }
+          return true;
+        }
+        return false;
+      }
+    });
+
+    this.addCommand({
       id: "rebuild-index",
-      name: "Rebuild Index",
+      name: "Rebuild Entire Vault",
       callback: async () => {
         await this.rebuildIndex();
       }
@@ -308,20 +329,98 @@ export default class VaultPilotIndexerPlugin extends Plugin {
       return;
     }
 
+    this.notify(`Starting full rebuild of ${total} files...`);
     this.updateBuildProgress(0, total);
+
     for (let i = 0; i < total; i += 1) {
       const file = files[i];
-      await this.processEvent({
-        type: "modify",
-        noteId: file.path,
-        path: file.path,
-        timestamp: Date.now()
-      });
+      await this.forceProcessFile(file);
       this.updateBuildProgress(i + 1, total);
     }
 
     this.statusBarEl.setText("JSONL Index: idle");
     this.notify(`Rebuild complete: ${total} files processed`);
+  }
+
+  private async forceProcessFile(file: TFile): Promise<void> {
+    const state = await this.stateStore.load();
+
+    const content = await this.app.vault.cachedRead(file);
+    const hash = computeContentHash(content);
+    const tags = this.extractTags(content);
+    const outlinks = this.extractOutlinks(content);
+
+    if (this.hasExcludedTag(tags)) {
+      delete state.last_processed_hash[file.path];
+      state.last_success_at = new Date().toISOString();
+      await this.stateStore.save(state);
+      return;
+    }
+
+    let summaryStatus: SummaryStatus = "pending";
+    let summary: string | undefined;
+    let providerMeta: IndexRecord["provider_meta"];
+
+    if (this.hasApiConfig()) {
+      const gateway = new OpenAiCompatibleGateway({
+        baseUrl: this.settings.api_base_url,
+        token: this.settings.api_token,
+        model: this.settings.model,
+        timeoutMs: this.settings.timeout_ms
+      });
+      const result = await gateway.summarize({
+        note_id: file.path,
+        title: file.basename,
+        content,
+        max_chars: this.settings.max_summary_chars
+      });
+
+      providerMeta = result.provider_meta;
+      if (result.success) {
+        summaryStatus = "ok";
+        summary = result.summary;
+        this.removeRetryQueueItem(state, file.path);
+      } else {
+        summaryStatus = "failed";
+        this.upsertRetryQueueItem(state, {
+          note_id: file.path,
+          path: file.path,
+          failed_at: new Date().toISOString(),
+          error_code: result.error_code ?? "UPSTREAM_INVALID_RESPONSE",
+          error_message: result.error_message,
+          retry_count: this.nextRetryCount(state, file.path)
+        });
+      }
+    }
+
+    const record: IndexRecord = {
+      schema_version: INDEX_SCHEMA_VERSION,
+      note_id: file.path,
+      path: file.path,
+      title: file.basename,
+      tags,
+      outlinks,
+      summary,
+      summary_status: summaryStatus,
+      hash,
+      mtime: new Date(file.stat.mtime).toISOString(),
+      provider_meta: providerMeta
+    };
+
+    await this.writer.append(record);
+
+    state.last_processed_hash[file.path] = hash;
+    state.last_success_at = new Date().toISOString();
+    state.stats = {
+      total_notes: Object.keys(state.last_processed_hash).length,
+      summarized_notes:
+        summaryStatus === "ok"
+          ? (state.stats?.summarized_notes ?? 0) + 1
+          : state.stats?.summarized_notes ?? 0,
+      failed_notes: state.retry_queue.length,
+      pending_notes: summaryStatus === "pending" ? (state.stats?.pending_notes ?? 0) + 1 : state.stats?.pending_notes ?? 0
+    };
+    await this.stateStore.save(state);
   }
 
   private async retryFailedSummaries(): Promise<void> {
@@ -509,5 +608,57 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     const filled = Math.round(ratio * barSize);
     const bar = `${"#".repeat(filled)}${"-".repeat(barSize - filled)}`;
     this.statusBarEl.setText(`VaultPilot Build [${bar}] ${done}/${total} (${percent}%)`);
+  }
+
+  private async reindexFile(file: TFile): Promise<void> {
+    if (file.extension !== "md" || this.shouldExcludePath(file.path)) {
+      this.notify("File is not eligible for indexing");
+      return;
+    }
+
+    this.notify(`Reindexing: ${file.path}`);
+    await this.forceProcessFile(file);
+    this.notify(`Reindex complete: ${file.path}`);
+  }
+
+  private addContextMenuItems(menu: Menu, file: TAbstractFile): void {
+    if (file instanceof TFile && file.extension === "md" && !this.shouldExcludePath(file.path)) {
+      menu.addItem((item) => {
+        item
+          .setTitle("Reindex this file")
+          .setIcon("refresh-cw")
+          .onClick(() => {
+            void this.reindexFile(file);
+          });
+      });
+    }
+
+    if (file instanceof TFolder) {
+      menu.addItem((item) => {
+        item
+          .setTitle("Reindex folder contents")
+          .setIcon("refresh-cw")
+          .onClick(() => {
+            void this.reindexFolder(file);
+          });
+      });
+    }
+  }
+
+  private async reindexFolder(folder: TFolder): Promise<void> {
+    const files = this.app.vault.getMarkdownFiles().filter(
+      (file) => file.path.startsWith(folder.path + "/") && !this.shouldExcludePath(file.path)
+    );
+
+    if (files.length === 0) {
+      this.notify("No eligible markdown files in folder");
+      return;
+    }
+
+    this.notify(`Reindexing ${files.length} files in ${folder.path}`);
+    for (const file of files) {
+      await this.forceProcessFile(file);
+    }
+    this.notify(`Reindex complete: ${files.length} files processed`);
   }
 }
