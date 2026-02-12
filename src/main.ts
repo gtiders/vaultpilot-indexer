@@ -34,6 +34,8 @@ export default class VaultPilotIndexerPlugin extends Plugin {
   private stateStore!: StateStore;
   private writer!: JsonlIndexWriter;
   private statusBarEl!: HTMLElement;
+  private lastActiveFile: TFile | null = null;
+  private modifiedFiles = new Set<string>();
   settings: PluginConfig = { ...DEFAULT_SETTINGS };
 
   async onload(): Promise<void> {
@@ -65,12 +67,6 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     );
 
     this.registerEvent(
-      this.app.vault.on("modify", (file) => {
-        this.enqueueFileEvent("modify", file);
-      })
-    );
-
-    this.registerEvent(
       this.app.vault.on("delete", (file) => {
         this.enqueueFileEvent("delete", file);
       })
@@ -91,6 +87,24 @@ export default class VaultPilotIndexerPlugin extends Plugin {
           oldPath,
           timestamp: Date.now()
         });
+      })
+    );
+
+    this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        if (this.lastActiveFile && this.modifiedFiles.has(this.lastActiveFile.path)) {
+          this.enqueueFileEvent("modify", this.lastActiveFile);
+          this.modifiedFiles.delete(this.lastActiveFile.path);
+        }
+        this.lastActiveFile = file;
+      })
+    );
+
+    this.registerEvent(
+      this.app.workspace.on("editor-change", (editor, info) => {
+        if (info.file instanceof TFile && info.file.extension === "md") {
+          this.modifiedFiles.add(info.file.path);
+        }
       })
     );
   }
