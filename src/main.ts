@@ -38,6 +38,7 @@ export default class VaultPilotIndexerPlugin extends Plugin {
   private statusBarEl!: HTMLElement;
   private lastActiveFile: TFile | null = null;
   private modifiedFiles = new Set<string>();
+  private externalModifyTimers = new Map<string, ReturnType<typeof setTimeout>>();
   settings: PluginConfig = { ...DEFAULT_SETTINGS };
 
   async onload(): Promise<void> {
@@ -107,6 +108,12 @@ export default class VaultPilotIndexerPlugin extends Plugin {
         if (info.file instanceof TFile && info.file.extension === "md") {
           this.modifiedFiles.add(info.file.path);
         }
+      })
+    );
+
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        this.handleExternalModify(file);
       })
     );
 
@@ -735,6 +742,29 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     this.notify(`Reindexing: ${file.path}`);
     await this.forceProcessFile(file);
     this.notify(`Reindex complete: ${file.path}`);
+  }
+
+  private handleExternalModify(file: TAbstractFile): void {
+    if (!(file instanceof TFile) || file.extension !== "md") {
+      return;
+    }
+    if (this.shouldExcludePath(file.path)) {
+      return;
+    }
+
+    const EXTERNAl_MODIFY_DELAY = 3000;
+
+    const existingTimer = this.externalModifyTimers.get(file.path);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    const timer = setTimeout(() => {
+      this.externalModifyTimers.delete(file.path);
+      this.enqueueFileEvent("modify", file);
+    }, EXTERNAl_MODIFY_DELAY);
+
+    this.externalModifyTimers.set(file.path, timer);
   }
 
   private addContextMenuItems(menu: Menu, file: TAbstractFile): void {
