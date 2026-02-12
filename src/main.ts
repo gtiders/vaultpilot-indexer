@@ -210,6 +210,14 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     });
 
     this.addCommand({
+      id: "export-tags-json",
+      name: "Export Tags to JSON (for Skill)",
+      callback: async () => {
+        await this.exportTagsToJson();
+      }
+    });
+
+    this.addCommand({
       id: "clear-index-data",
       name: "Clear Index Data",
       callback: async () => {
@@ -882,6 +890,44 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     }
 
     return tagMap;
+  }
+
+  async exportTagsToJson(): Promise<void> {
+    const tagMap = await this.loadTagsFromIndex();
+
+    if (tagMap.size === 0) {
+      this.notify("No tags found in index");
+      return;
+    }
+
+    const tagsData: Record<string, { count: number; files: string[] }> = {};
+    for (const [tag, files] of tagMap.entries()) {
+      tagsData[tag] = {
+        count: files.length,
+        files: files.slice(0, 10)
+      };
+    }
+
+    const tagsJsonPath = ".obsidian/plugins/vaultpilot-indexer/tags_index.json";
+
+    try {
+      await this.ensurePluginDir();
+      await this.app.vault.adapter.write(
+        tagsJsonPath,
+        JSON.stringify(tagsData, null, 2)
+      );
+      this.notify(`Tags index exported to ${tagsJsonPath} (${tagMap.size} tags)`);
+    } catch (error) {
+      this.notify(`Failed to export tags JSON: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  private async ensurePluginDir(): Promise<void> {
+    const pluginDir = ".obsidian/plugins/vaultpilot-indexer";
+    const exists = await this.app.vault.adapter.exists(pluginDir);
+    if (!exists) {
+      await this.app.vault.adapter.mkdir(pluginDir);
+    }
   }
 
   async clearIndexData(): Promise<void> {

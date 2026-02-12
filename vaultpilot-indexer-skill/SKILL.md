@@ -3,6 +3,7 @@
 ## Purpose
 
 Vault Writing Navigator guides collaborators on how to organize new articles in an Obsidian vault by analyzing the `content_index.jsonl` file and providing recommendations for:
+
 - **Folder placement**: Where to save the new note
 - **Tag selection**: Which tags to apply
 - **Cross-references**: Which existing notes to link
@@ -111,13 +112,21 @@ interface Reference {
 ## Behavior Rules
 
 ### Must DO
+
 - ✅ Always provide folder, tags, references, and rationale
 - ✅ Use existing patterns from JSONL analysis
 - ✅ Suggest references that share tags or semantic similarity
 - ✅ Respect intent constraints (avoid_folders, topic_area)
 - ✅ Keep summaries under 200 characters
+- ✅ **CRITICAL**: Reference `tags_index.json` to avoid creating synonymous tags
+  - If proposed tag is "js" but "javascript" exists → use "javascript"
+  - If proposed tag is "k8s" but "kubernetes" exists → use "kubernetes"
+  - If proposed tag is "ai" but "artificial-intelligence" exists → use "artificial-intelligence"
+  - Prefer full words over abbreviations when both exist
+  - Prefer singular over plural when both exist (e.g., "note" over "notes")
 
 ### Must NOT DO
+
 - ❌ Never suggest automatic file moves or modifications
 - ❌ Never suggest destructive operations (delete, overwrite)
 - ❌ Never ignore user intent constraints
@@ -136,12 +145,15 @@ interface Reference {
 ## Error Handling
 
 If JSONL is missing or malformed:
+
 - Return error: "Index file not found. Run plugin to generate content_index.jsonl"
 
 If article content is too short (< 50 chars):
+
 - Return warning: "Article content too short for meaningful recommendations"
 
 If no relevant notes found:
+
 - Return: "No strong matches found. Consider creating new category or check index coverage"
 
 ## Usage Example
@@ -166,6 +178,7 @@ const output = await skill.recommend(input);
 ## Integration with Plugin
 
 The plugin generates `content_index.jsonl`. The skill consumes it. This separation means:
+
 - Plugin focuses on indexing and API calls
 - Skill focuses on organizational intelligence
 - Both share a single source of truth (JSONL)

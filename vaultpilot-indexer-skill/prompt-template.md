@@ -44,10 +44,17 @@ Analyze the article and vault index, then provide recommendations for:
 - Consider topic area from intent if provided
 
 ### Tag Selection
+- **CRITICAL**: Check `tags_index.json` first to avoid creating synonymous tags
 - Use existing tags from similar notes when appropriate
-- Include proposed tags if they fit
+- Include proposed tags if they fit and don't conflict with existing synonyms
 - Add domain-specific tags based on content analysis
 - Keep tag count reasonable (3-8 tags typical)
+- **Synonym Resolution**:
+  - If user suggests "js" but "javascript" exists in tags_index.json → use "javascript"
+  - If user suggests "k8s" but "kubernetes" exists → use "kubernetes"
+  - If user suggests "ai" but "artificial-intelligence" exists → use "artificial-intelligence"
+  - Prefer full words over abbreviations when both exist
+  - Prefer singular over plural when both exist
 
 ### Reference Selection
 - Select 2-5 most relevant existing notes
