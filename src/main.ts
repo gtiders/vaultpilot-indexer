@@ -809,27 +809,10 @@ export default class VaultPilotIndexerPlugin extends Plugin {
   }
 
   async exportTagsToFile(): Promise<void> {
-    const state = await this.stateStore.load();
-    const tagMap = new Map<string, string[]>();
-
-    for (const file of this.app.vault.getMarkdownFiles()) {
-      if (this.shouldExcludePath(file.path)) {
-        continue;
-      }
-
-      const content = await this.app.vault.cachedRead(file);
-      const tags = this.extractTags(content);
-
-      for (const tag of tags) {
-        if (!tagMap.has(tag)) {
-          tagMap.set(tag, []);
-        }
-        tagMap.get(tag)!.push(file.path);
-      }
-    }
+    const tagMap = await this.loadTagsFromIndex();
 
     if (tagMap.size === 0) {
-      this.notify("No tags found to export");
+      this.notify("No tags found in index");
       return;
     }
 
@@ -863,6 +846,42 @@ export default class VaultPilotIndexerPlugin extends Plugin {
     } catch (error) {
       this.notify(`Failed to export tags: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
+  }
+
+  private async loadTagsFromIndex(): Promise<Map<string, string[]>> {
+    const tagMap = new Map<string, string[]>();
+
+    try {
+      const exists = await this.app.vault.adapter.exists(INDEX_FILE_PATH);
+      if (!exists) {
+        return tagMap;
+      }
+
+      const raw = await this.app.vault.adapter.read(INDEX_FILE_PATH);
+      const lines = raw.split("\n").filter((line) => line.trim().length > 0);
+
+      for (const line of lines) {
+        try {
+          const record = JSON.parse(line) as IndexRecord;
+          if (record.tags && record.tags.length > 0) {
+            for (const tag of record.tags) {
+              if (!tagMap.has(tag)) {
+                tagMap.set(tag, []);
+              }
+              if (!tagMap.get(tag)!.includes(record.path)) {
+                tagMap.get(tag)!.push(record.path);
+              }
+            }
+          }
+        } catch {
+          // Skip invalid JSON lines
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load tags from index:", error);
+    }
+
+    return tagMap;
   }
 
   async clearIndexData(): Promise<void> {
